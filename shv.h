@@ -75,7 +75,7 @@ typedef struct _SHV_VP_DATA
     ULONG VpIndex;
     volatile ULONG VmxEnabled;
     ULONG64 SystemDirectoryTableBase;
-    LARGE_INTEGER MsrData[18];
+    LARGE_INTEGER MsrData[17];
     ULONGLONG VmxOnPhysicalAddress;
     ULONGLONG VmcsPhysicalAddress;
     ULONGLONG MsrBitmapPhysicalAddress;
