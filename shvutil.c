@@ -139,6 +139,12 @@ ShUtilvAllocateContiguousMemory(
 	// memory.
 	//
 #pragma warning(suppress: 30029)
-	return MmAllocateContiguousMemory(NumberOfBytes, highest);
+	return MmAllocateContiguousMemorySpecifyCache(
+		NumberOfBytes,
+		lowest,
+		highest,
+		lowest,
+		MmCached
+	);
 }
 
