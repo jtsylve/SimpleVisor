@@ -22,6 +22,11 @@ Environment:
 
 #include "shv.h"
 
+//
+// Get the per-virtual-process global data
+//
+#define SHV_VP_DATA (ShvGlobalData->VpData[KeGetCurrentProcessorNumberEx(NULL)])
+
 VOID
 ShvVpInitialize(
 	_In_ PSHV_VP_DATA Data,
@@ -58,7 +63,7 @@ ShvVpInitialize(
 	// variable combined with an API call, we also make sure that the compiler
 	// will not optimize this access in any way, even on LTGC/Ox builds.
 	//
-	if (ShvGlobalData->VpData[KeGetCurrentProcessorNumberEx(NULL)].VmxEnabled == 1)
+	if (SHV_VP_DATA.VmxEnabled == 1)
 	{
 		//
 		// We now indicate that the VM has launched, and that we are about to
@@ -67,7 +72,7 @@ ShvVpInitialize(
 		// this time the value of VmxEnabled will be two, bypassing the if and
 		// else if checks.
 		//
-		ShvGlobalData->VpData[KeGetCurrentProcessorNumberEx(NULL)].VmxEnabled = 2;
+		SHV_VP_DATA.VmxEnabled = 2;
 
 		//
 		// And finally, restore the context, so that all register and stack
@@ -76,7 +81,7 @@ ShvVpInitialize(
 		// optimized accesses, guaranteeing that no previous register state
 		// will be used.
 		//
-		RtlRestoreContext(&ShvGlobalData->VpData[KeGetCurrentProcessorNumberEx(NULL)].HostState.ContextFrame, NULL);
+		RtlRestoreContext(&SHV_VP_DATA.HostState.ContextFrame, NULL);
 	}
 	//
 	// If we are in this branch comparison, it means that we have not yet
@@ -149,7 +154,7 @@ ShvVpCallbackDpc(
 	//
 	// Get the per-VP data for this logical processor
 	//
-	vpData = &ShvGlobalData->VpData[KeGetCurrentProcessorNumberEx(NULL)];
+	vpData = &SHV_VP_DATA;
 
 	//
 	// Check if we are loading, or unloading
@@ -208,7 +213,7 @@ ShvVpAllocateGlobalData(
 		//
 		// Zero out the entire data region
 		//
-		__stosq((PULONGLONG)data, 0, size / sizeof(ULONGLONG));
+		RtlZeroMemory(data, size);
 	}
 
 	//
