@@ -213,7 +213,8 @@ ShvVpAllocateGlobalData(
 		//
 		// Zero out the entire data region
 		//
-		RtlZeroMemory(data, size);
+		NT_ASSERT(size % sizeof(ULONG64) == 0);
+		__stosq((PULONG64)data, 0, size / sizeof(ULONG64));
 	}
 
 	//

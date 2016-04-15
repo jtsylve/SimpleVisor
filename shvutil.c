@@ -138,7 +138,7 @@ ShUtilvAllocateContiguousMemory(
 	// If we're here then we'll just fall back to using executable
 	// memory.
 	//
-#pragma warning(suppress: 30029)
+#pragma warning(suppress: 30030)
 	return MmAllocateContiguousMemorySpecifyCache(
 		NumberOfBytes,
 		lowest,
