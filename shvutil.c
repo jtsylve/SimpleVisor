@@ -95,7 +95,7 @@ ShvUtilAdjustMsr(
 }
 
 PVOID
-ShUtilvAllocateContiguousMemory(
+ShvUtilAllocateContiguousMemory(
 	_In_ SIZE_T NumberOfBytes
 )
 {

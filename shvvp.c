@@ -207,7 +207,7 @@ ShvVpAllocateGlobalData(
 	//
 	// Allocate a contiguous chunk of RAM to back this allocation.
 	//
-	data = (PSHV_GLOBAL_DATA)ShUtilvAllocateContiguousMemory(size);
+	data = (PSHV_GLOBAL_DATA)ShvUtilAllocateContiguousMemory(size);
 	if (data != NULL)
 	{
 		//

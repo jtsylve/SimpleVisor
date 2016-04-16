@@ -330,6 +330,15 @@ ShvVmxProbe(
 	ULONGLONG featureControl;
 
 	//
+	// Verify that we're dealing with Intel hardware
+	//
+	__cpuid(cpu_info, 0);
+	if (cpu_info[1] != 'uneG' && cpu_info[2] != 'Ieni' && cpu_info[3] != 'letn')
+	{
+		return FALSE;
+	}
+
+	//
 	// Check the Hypervisor Present-bit
 	//
 	__cpuid(cpu_info, 1);

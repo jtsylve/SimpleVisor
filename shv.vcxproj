@@ -54,6 +54,7 @@
     <ClCompile Include="shv.c" />
     <ClCompile Include="shvutil.c" />
     <ClCompile Include="shvvmx.c" />
+    <ClCompile Include="shvvmxept.c" />
     <ClCompile Include="shvvmxhv.c" />
     <ClCompile Include="shvvp.c" />
   </ItemGroup>
@@ -61,6 +62,7 @@
     <ClInclude Include="shv.h" />
     <ClInclude Include="ntint.h" />
     <ClInclude Include="vmx.h" />
+    <ClInclude Include="vmxept.h" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="shvx64.asm" />
