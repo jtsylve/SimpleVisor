@@ -22,6 +22,23 @@ Kernel mode only.
 
 #pragma once
 
+// ===========================================================================
+//
+// MACROS
+//
+// ===========================================================================
+
+//
+// VMX EPT uses 4-level page tables.
+//
+#define VMX_EPT_PAGE_WALK_LENGTH (4)
+
+// ===========================================================================
+//
+// STRUCTURES
+//
+// ===========================================================================
+
 //
 // The EPT memory type is specified in bits 5:3 of the last EPT
 // paging-structure entry.  Other values are reserved and cause
@@ -135,7 +152,7 @@ typedef union _VMX_EPT_PTE {
 		ULONG64 X : 1; // Execute access
 		ULONG64 MT : 3; // EPT memory type 
 		ULONG64 IPAT : 1; // Ignore PAT memory type
-		ULONG64 ignored0 : 1; 
+		ULONG64 ignored0 : 1;
 		ULONG64 A : 1; // Indicates whether software has accessed the page
 		ULONG64 D : 1; // Indicates whether software has written to the page
 		ULONG64 ignored1 : 2;
@@ -167,7 +184,7 @@ typedef union _VMX_EPT_ADDRESS {
 		ULONG64 DIR : 40; // Bits 51:12 are from the directory table address
 		ULONG64 reserved2 : 12; // Bits 63:52 are 0;
 	};
-	
+
 	//
 	// This breaks down the GPA into the bits used for the offsets
 	// of the given EPT table (see above).
@@ -191,3 +208,39 @@ typedef union _VMX_EPT_ADDRESS {
 	ULONG64 QuadPart;
 } VMX_EPT_ADDRESS, *PVMX_EPT_ADDRESS;
 C_ASSERT(sizeof(VMX_EPT_ADDRESS) == 8);
+
+// ===========================================================================
+//
+// FORWARD DECLARATIONS
+//
+// ===========================================================================
+
+typedef struct _SHV_VP_STATE *PSHV_VP_STATE;
+
+// ===========================================================================
+//
+// PUBLIC PROTOTYPES
+//
+// ===========================================================================
+
+BOOLEAN
+ShvVmxEptProbe(
+	VOID
+);
+
+NTSTATUS
+ShvVmxEptInitialize(
+	VOID
+);
+
+VOID
+ShvVmxEptCleanup(
+	VOID
+);
+
+VOID
+ShvVmxEptHandleViolation(
+	_In_ PSHV_VP_STATE VpState
+);
+
+extern VMX_EPT_EPTP ShvVmxEptEptp; 

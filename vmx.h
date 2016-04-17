@@ -4,19 +4,19 @@ Copyright (c) Alex Ionescu.  All rights reserved.
 
 Header Name:
 
-	vmx.h
+vmx.h
 
 Abstract:
 
-	This header defines the MSRs and VMCS fields for Intel x64 VT-x support.
+This header defines the MSRs and VMCS fields for Intel x64 VT-x support.
 
 Author:
 
-	Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
+Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
 
 Environment:
 
-	Kernel mode only.
+Kernel mode only.
 
 --*/
 
@@ -96,6 +96,7 @@ Environment:
 #define VMX_BASIC_MEMORY_TYPE_MASK              (0xfULL << 50)
 #define VMX_BASIC_INS_OUT_INFO                  (1ULL << 54)
 #define VMX_BASIC_DEFAULT1_ZERO                 (1ULL << 55)
+#define IA32_APIC_BASE_ADDRESS_MASK             (0xffffffULL << 12)
 
 /* MSRs & bits used for VMX enabling */
 #define MSR_IA32_VMX_BASIC                      0x480
@@ -115,6 +116,7 @@ Environment:
 #define MSR_IA32_VMX_TRUE_PROCBASED_CTLS        0x48e
 #define MSR_IA32_VMX_TRUE_EXIT_CTLS             0x48f
 #define MSR_IA32_VMX_TRUE_ENTRY_CTLS            0x490
+#define IA32_APIC_BASE_MSR                      0x1b
 #define IA32_FEATURE_CONTROL_MSR                0x3a
 #define IA32_FEATURE_CONTROL_MSR_LOCK                     0x0001
 #define IA32_FEATURE_CONTROL_MSR_ENABLE_VMXON_INSIDE_SMX  0x0002

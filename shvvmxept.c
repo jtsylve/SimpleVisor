@@ -47,6 +47,20 @@ Kernel mode only, IRQL DISPATCH_LEVEL.
 		name++\
 		)
 
+//
+// Given a violation reasion, tell whether an EPT violation
+// was caused by an EPT entry not being present.
+//
+#define SHV_EPT_VIOLATION_ENTRY_MISS(vr) ((vr & (7 << 3)) == 0)
+
+// ===========================================================================
+//
+// GLOBAL DATA
+//
+// ===========================================================================
+
+VMX_EPT_EPTP ShvVmxEptEptp = { 0 };
+
 // ===========================================================================
 //
 // LOCAL DATA
@@ -150,6 +164,14 @@ ShvVmxEptInitialize(
 		ShvVmxEptCleanup();
 		return ret;
 	}
+
+	//
+	// Initialize the EPTP by setting the PFN of the top-level
+	// EPT table as well as the number of page table levels - 1.
+	//
+	ShvVmxEptEptp.PFN = ShvVmxEptGetPfnFromVirtual(ShvVmxEptPML4);
+	ShvVmxEptEptp.PW = VMX_EPT_PAGE_WALK_LENGTH - 1;
+	ShvVmxEptEptp.MT = WriteBack;
 
 	return STATUS_SUCCESS;
 }
@@ -260,6 +282,32 @@ ShvVmxEptCleanup(
 	ShvVmxEptPML4 = NULL;
 }
 
+VOID
+ShvVmxEptHandleViolation(
+	_In_ PSHV_VP_STATE VpState
+)
+{
+	PHYSICAL_ADDRESS gpa;
+
+	//
+	// Read guest physical address that caused the violation.
+	//
+	__vmx_vmread(GUEST_PHYSICAL_ADDRESS, (PSIZE_T)&gpa.QuadPart);
+
+	if (SHV_EPT_VIOLATION_ENTRY_MISS(VpState->ExitReason)) {
+		NTSTATUS ret;
+
+		//
+		// Add an EPT entry for the GPA.
+		//
+		ret = ShvVmxEptPopulateIdentityTable(ShvVmxEptPML4, VMX_EPT_PAGE_WALK_LENGTH, gpa);
+		NT_VERIFYMSG("GPA EPT Allocation Failed", ret == STATUS_SUCCESS);
+		return;
+	}
+
+	NT_ASSERTMSG("Unknown EPT Violation Reason", FALSE);
+}
+
 // ===========================================================================
 //
 // LOCAL FUNCTIONS
@@ -269,7 +317,7 @@ ShvVmxEptCleanup(
 static PVOID
 ShvVmxEptGetVirtualFromPfn(
 	SIZE_T Pfn
-	) 
+)
 {
 	PHYSICAL_ADDRESS pa;
 
@@ -287,7 +335,7 @@ ShvVmxEptGetVirtualFromPfn(
 static SIZE_T
 ShvVmxEptGetPfnFromVirtual(
 	PVOID Va
-	)
+)
 {
 	PHYSICAL_ADDRESS pa;
 
@@ -307,11 +355,11 @@ ShvVmxEptPopulateIdentityTable(
 	PVMX_EPT_ENTRY table,
 	ULONG level,
 	PHYSICAL_ADDRESS address
-	)
+)
 {
 	PVMX_EPT_ENTRY next;
 	VMX_EPT_ADDRESS gpa, ta;
-	
+
 	// Initialize the guest physical address and the table address.
 	gpa.QuadPart = address.QuadPart;
 	ta.Entry = table;
@@ -343,11 +391,17 @@ ShvVmxEptPopulateIdentityTable(
 
 		pte = (PVMX_EPT_PTE)ta.Entry;
 
-		pte->R = 1;
-		pte->W = 1;
-		pte->X = 1;
-		pte->MT = WriteBack;
-		pte->PFN = SHV_PHYS_TO_PFN(address.QuadPart);
+		//
+		// Populate the PTE if it's not already set.
+		//
+		if (pte->QuadPart == 0)
+		{
+			pte->R = 1;
+			pte->W = 1;
+			pte->X = 1;
+			pte->MT = WriteBack;
+			pte->PFN = SHV_PHYS_TO_PFN(address.QuadPart);
+		}
 
 		return STATUS_SUCCESS;
 	}
@@ -372,7 +426,7 @@ ShvVmxEptPopulateIdentityTable(
 		ta.Entry->X = 1;
 		ta.Entry->PFN = ShvVmxEptGetPfnFromVirtual(next);
 	}
-	else 
+	else
 	{
 		next = (PVMX_EPT_ENTRY)ShvVmxEptGetVirtualFromPfn(ta.Entry->PFN);
 	}
@@ -383,15 +437,21 @@ ShvVmxEptPopulateIdentityTable(
 static NTSTATUS
 ShvVmxEptBuildIdentityTables(
 	VOID
-	) 
+)
 {
 	PPHYSICAL_MEMORY_RANGE ranges;
+	PHYSICAL_ADDRESS apicBase;
+	NTSTATUS ret;
 
 	//
 	// Get physical memory ranges
 	//
 	ranges = MmGetPhysicalMemoryRanges();
 
+	//
+	// Iterate through each physical memory range and create an identity mapping
+	// for each 4 KiB page in each range.
+	//
 	for (SIZE_T i = 0; ranges[i].BaseAddress.QuadPart != 0 || ranges[i].NumberOfBytes.QuadPart != 0; i++)
 	{
 		PHYSICAL_ADDRESS start, end;
@@ -402,16 +462,31 @@ ShvVmxEptBuildIdentityTables(
 		//
 		// Populate the EPT table with a PTE for each page in the range.
 		//
-
 		for (PHYSICAL_ADDRESS address = start; address.QuadPart < end.QuadPart; address.QuadPart += PAGE_SIZE)
 		{
-			NTSTATUS ret;
-
-			ret = ShvVmxEptPopulateIdentityTable(ShvVmxEptPML4, 4, address);
+			ret = ShvVmxEptPopulateIdentityTable(ShvVmxEptPML4, VMX_EPT_PAGE_WALK_LENGTH, address);
 			if (ret != STATUS_SUCCESS) {
 				return ret;
 			}
 		}
+	}
+
+	//
+	// We also apparently have to create a mapping for the APIC or the system
+	// hangs on us.
+	//
+
+	//
+	// Get the APIC base physical address.
+	//
+	apicBase.QuadPart = (__readmsr(IA32_APIC_BASE_MSR) & IA32_APIC_BASE_ADDRESS_MASK);
+
+	//
+	// Map the APIC base page.
+	//
+	ret = ShvVmxEptPopulateIdentityTable(ShvVmxEptPML4, VMX_EPT_PAGE_WALK_LENGTH, apicBase);
+	if (ret != STATUS_SUCCESS) {
+		return ret;
 	}
 
 	return STATUS_SUCCESS;

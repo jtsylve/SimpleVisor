@@ -4,19 +4,19 @@ Copyright (c) Alex Ionescu.  All rights reserved.
 
 Header Name:
 
-	shv.h
+shv.h
 
 Abstract:
 
-	This header defines the structures and functions of the Simple Hyper Visor.
+This header defines the structures and functions of the Simple Hyper Visor.
 
 Author:
 
-	Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
+Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
 
 Environment:
 
-	Kernel mode only.
+Kernel mode only.
 
 --*/
 
@@ -151,21 +151,6 @@ ShvVpAllocateGlobalData(
 
 BOOLEAN
 ShvVmxProbe(
-	VOID
-);
-
-BOOLEAN
-ShvVmxEptProbe(
-	VOID
-);
-
-NTSTATUS
-ShvVmxEptInitialize(
-	VOID
-);
-
-VOID
-ShvVmxEptCleanup(
 	VOID
 );
 

@@ -4,19 +4,19 @@ Copyright (c) Alex Ionescu.  All rights reserved.
 
 Module Name:
 
-	shvvmxhv.c
+shvvmxhv.c
 
 Abstract:
 
-	This module implements the Simple Hyper Visor itself.
+This module implements the Simple Hyper Visor itself.
 
 Author:
 
-	Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
+Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
 
 Environment:
 
-	Hypervisor mode only, IRQL DIRQL_MAX
+Hypervisor mode only, IRQL DIRQL_MAX
 
 --*/
 
@@ -140,9 +140,9 @@ ShvVmxHandleVmx(
 	//
 	VpState->GuestEFlags |= 0x1; // VM_FAIL_INVALID
 
-	//
-	// RFLAGs is actually restored from the VMCS, so update it here
-	//
+								 //
+								 // RFLAGs is actually restored from the VMCS, so update it here
+								 //
 	__vmx_vmwrite(GUEST_RFLAGS, VpState->GuestEFlags);
 }
 
@@ -168,6 +168,9 @@ ShvVmxHandleExit(
 		break;
 	case EXIT_REASON_XSETBV:
 		ShvVmxHandleXsetbv(VpState);
+		break;
+	case EXIT_REASON_EPT_VIOLATION:
+		ShvVmxEptHandleViolation(VpState);
 		break;
 	case EXIT_REASON_VMCALL:
 	case EXIT_REASON_VMCLEAR:

@@ -4,19 +4,19 @@ Copyright (c) Alex Ionescu.  All rights reserved.
 
 Module Name:
 
-	shvvmx.c
+shvvmx.c
 
 Abstract:
 
-	This module implements Intel VMX (Vanderpool/VT-x)-specific routines.
+This module implements Intel VMX (Vanderpool/VT-x)-specific routines.
 
 Author:
 
-	Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
+Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
 
 Environment:
 
-	Kernel mode only, IRQL DISPATCH_LEVEL.
+Kernel mode only, IRQL DISPATCH_LEVEL.
 
 --*/
 
@@ -134,14 +134,25 @@ ShvVmxSetupVmcsForVp(
 	__vmx_vmwrite(MSR_BITMAP, VpData->MsrBitmapPhysicalAddress);
 
 	//
+	// Set a unique, non-zero VPID for the logical processor.
+	//
+	__vmx_vmwrite(VIRTUAL_PROCESSOR_ID, 1);
+
+	//
+	// Set the EPT pointer to point to the EPT tables.
+	//
+	__vmx_vmwrite(EPT_POINTER, ShvVmxEptEptp.QuadPart);
+
+	//
 	// Enable support for RDTSCP and XSAVES/XRESTORES in the guest. Windows 10
-	// makes use of both of these instructions if the CPU supports it. By using
-	// ShvUtilAdjustMsr, these options will be ignored if this processor does
-	// not actully support the instructions to begin with.
+	// makes use of both of these instructions if the CPU supports it. 
+	// Also enable support for VPID and EPT. By using ShvUtilAdjustMsr, these options 
+	// will be ignored if this processor does not actully support the instructions 
+	// to begin with.
 	//
 	__vmx_vmwrite(SECONDARY_VM_EXEC_CONTROL,
 		ShvUtilAdjustMsr(VpData->MsrData[11],
-			SECONDARY_EXEC_ENABLE_RDTSCP | SECONDARY_EXEC_XSAVES));
+			SECONDARY_EXEC_ENABLE_RDTSCP | SECONDARY_EXEC_XSAVES | SECONDARY_EXEC_ENABLE_VPID | SECONDARY_EXEC_ENABLE_EPT));
 
 	//
 	// Enable no pin-based options ourselves, but there may be some required by
