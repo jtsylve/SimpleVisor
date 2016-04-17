@@ -4,19 +4,19 @@ Copyright (c) Alex Ionescu.  All rights reserved.
 
 Module Name:
 
-shvvmx.c
+	shvvmx.c
 
 Abstract:
 
-This module implements Intel VMX (Vanderpool/VT-x)-specific routines.
+	This module implements Intel VMX (Vanderpool/VT-x)-specific routines.
 
 Author:
 
-Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
+	Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
 
 Environment:
 
-Kernel mode only, IRQL DISPATCH_LEVEL.
+	Kernel mode only, IRQL DISPATCH_LEVEL.
 
 --*/
 

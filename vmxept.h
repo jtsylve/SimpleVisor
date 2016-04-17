@@ -243,4 +243,4 @@ ShvVmxEptHandleViolation(
 	_In_ PSHV_VP_STATE VpState
 );
 
-extern VMX_EPT_EPTP ShvVmxEptEptp; 
+extern VMX_EPT_EPTP ShvVmxEptEptp;

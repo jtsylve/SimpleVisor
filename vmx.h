@@ -4,19 +4,19 @@ Copyright (c) Alex Ionescu.  All rights reserved.
 
 Header Name:
 
-vmx.h
+	vmx.h
 
 Abstract:
 
-This header defines the MSRs and VMCS fields for Intel x64 VT-x support.
+	This header defines the MSRs and VMCS fields for Intel x64 VT-x support.
 
 Author:
 
-Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
+	Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
 
 Environment:
 
-Kernel mode only.
+	Kernel mode only.
 
 --*/
 
