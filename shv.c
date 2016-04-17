@@ -64,11 +64,6 @@ ShvUnload(
 	KeGenericCallDpc(ShvVpCallbackDpc, NULL);
 
 	//
-	// Free the EPT tables.
-	//
-	ShvVmxEptCleanup();
-
-	//
 	// If the SHV was not fully/correctly loaded, we may not have global data
 	// allocated yet. Check for that before freeing it.
 	//
@@ -95,7 +90,6 @@ ShvInitialize(
 )
 {
 	UNREFERENCED_PARAMETER(RegistryPath);
-	NTSTATUS ret;
 
 	//
 	// Detect if a hypervisor is already loaded, using the standard high bit in
@@ -118,30 +112,12 @@ ShvInitialize(
 	}
 
 	//
-	// Detect if the hardware appears to support VMX EPT.
-	//
-	if (!ShvVmxEptProbe())
-	{
-		return STATUS_HV_FEATURE_UNAVAILABLE;
-	}
-
-	//
 	// Allocate the global shared data which all virtual processors will share.
 	//
 	ShvGlobalData = ShvVpAllocateGlobalData();
 	if (!ShvGlobalData)
 	{
 		return STATUS_HV_INSUFFICIENT_BUFFER;
-	}
-
-	//
-	// Allocate and initialize EPT tables.
-	//
-	ret = ShvVmxEptInitialize();
-	if (ret != STATUS_SUCCESS)
-	{
-		MmFreeContiguousMemory(ShvGlobalData);
-		return ret;
 	}
 
 	//

@@ -27,7 +27,6 @@ Environment:
 #include <intrin.h>
 #include "ntint.h"
 #include "vmx.h"
-#include "vmxept.h"
 
 typedef struct _VMX_GDTENTRY64
 {
@@ -140,7 +139,7 @@ ShvUtilAdjustMsr(
 );
 
 PVOID
-ShvUtilAllocateContiguousMemory(
+ShUtilvAllocateContiguousMemory(
 	_In_ SIZE_T NumberOfBytes
 );
 
@@ -151,21 +150,6 @@ ShvVpAllocateGlobalData(
 
 BOOLEAN
 ShvVmxProbe(
-	VOID
-);
-
-BOOLEAN
-ShvVmxEptProbe(
-	VOID
-);
-
-NTSTATUS
-ShvVmxEptInitialize(
-	VOID
-);
-
-VOID
-ShvVmxEptCleanup(
 	VOID
 );
 
