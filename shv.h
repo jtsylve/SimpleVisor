@@ -25,6 +25,7 @@ Environment:
 #pragma warning(disable:4214)
 #include <ntifs.h>
 #include <intrin.h>
+#include "debug.h"
 #include "ntint.h"
 #include "vmx.h"
 #include "vmxept.h"

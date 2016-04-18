@@ -4,19 +4,19 @@ Copyright (c) Joe T. Sylve.  All rights reserved.
 
 Module Name:
 
-shvvmxept.c
+	shvvmxept.c
 
 Abstract:
 
-This module implements Intel VMX EPT (Extended Page Tables)-specific routines.
+	This module implements Intel VMX EPT (Extended Page Tables)-specific routines.
 
 Author:
 
-Joe T. Sylve (@jtsylve) 16-Apr-2016 - Initial version
+	Joe T. Sylve (@jtsylve) 16-Apr-2016 - Initial version
 
 Environment:
 
-Kernel mode only, IRQL DISPATCH_LEVEL.
+	Kernel mode only, IRQL DISPATCH_LEVEL.
 
 --*/
 
@@ -68,6 +68,7 @@ VMX_EPT_EPTP ShvVmxEptEptp = { 0 };
 // ===========================================================================
 
 static PVMX_EPT_ENTRY ShvVmxEptPML4 = NULL;
+static KSPIN_LOCK ShvVmxEptPML4Lock = { 0 };
 
 // ===========================================================================
 //
@@ -86,14 +87,24 @@ ShvVmxEptGetPfnFromVirtual(
 );
 
 static NTSTATUS
-ShvVmxEptPopulateIdentityTable(
+_ShvVmxEptPopulateIdentityTable(
 	PVMX_EPT_ENTRY table,
 	ULONG level,
 	PHYSICAL_ADDRESS address
 );
 
 static NTSTATUS
+ShvVmxIdentityMapPage(
+	PHYSICAL_ADDRESS address
+);
+
+static NTSTATUS
 ShvVmxEptBuildIdentityTables(
+	VOID
+);
+
+static VOID
+ShvVmxEptInvalidateEpt(
 	VOID
 );
 
@@ -155,6 +166,11 @@ ShvVmxEptInitialize(
 	__stosq((PUINT64)ShvVmxEptPML4, 0, PAGE_SIZE / sizeof(ULONG64));
 
 	//
+	// Initialize the lock.
+	//
+	KeInitializeSpinLock(&ShvVmxEptPML4Lock);
+
+	//
 	// Build the EPT identity table by creating an entry for
 	// each physical address page on the system.
 	//
@@ -181,11 +197,14 @@ ShvVmxEptCleanup(
 	VOID
 )
 {
+	KeAcquireSpinLockAtDpcLevel(&ShvVmxEptPML4Lock);
+
 	if (ShvVmxEptPML4 == NULL)
 	{
 		//
 		// Nothing to do here.
 		//
+		KeReleaseSpinLockFromDpcLevel(&ShvVmxEptPML4Lock);
 		return;
 	}
 
@@ -280,6 +299,8 @@ ShvVmxEptCleanup(
 	//
 	MmFreeContiguousMemory(ShvVmxEptPML4);
 	ShvVmxEptPML4 = NULL;
+
+	KeReleaseSpinLockFromDpcLevel(&ShvVmxEptPML4Lock);
 }
 
 VOID
@@ -287,21 +308,46 @@ ShvVmxEptHandleViolation(
 	_In_ PSHV_VP_STATE VpState
 )
 {
+	UNREFERENCED_PARAMETER(VpState);
+
 	PHYSICAL_ADDRESS gpa;
+	SIZE_T eq;
 
 	//
 	// Read guest physical address that caused the violation.
 	//
 	__vmx_vmread(GUEST_PHYSICAL_ADDRESS, (PSIZE_T)&gpa.QuadPart);
 
-	if (SHV_EPT_VIOLATION_ENTRY_MISS(VpState->ExitReason)) {
+	//
+	// Read the exit qualification
+	//
+	__vmx_vmread(EXIT_QUALIFICATION, &eq);
+
+	SHV_DEBUG_PRINT("[%u] GPA: %llx Exit Reason %llx\n",
+		KeGetCurrentProcessorNumberEx(NULL),
+		gpa.QuadPart,
+		eq
+	);
+
+	//
+	// Check to see if the violation was caused because there was no EPT
+	// entry present.  This could happen, because we didn't identity map
+	// the hardware MMIO mappings.
+	//
+	if (SHV_EPT_VIOLATION_ENTRY_MISS(eq)) {
 		NTSTATUS ret;
 
 		//
 		// Add an EPT entry for the GPA.
 		//
-		ret = ShvVmxEptPopulateIdentityTable(ShvVmxEptPML4, VMX_EPT_PAGE_WALK_LENGTH, gpa);
+		ret = ShvVmxIdentityMapPage(gpa);
 		NT_VERIFYMSG("GPA EPT Allocation Failed", ret == STATUS_SUCCESS);
+
+		//
+		// Since we modified the EPT table, we need to invalidate the EPT.
+		//
+		ShvVmxEptInvalidateEpt();
+
 		return;
 	}
 
@@ -351,7 +397,7 @@ ShvVmxEptGetPfnFromVirtual(
 }
 
 static NTSTATUS
-ShvVmxEptPopulateIdentityTable(
+_ShvVmxEptPopulateIdentityTable(
 	PVMX_EPT_ENTRY table,
 	ULONG level,
 	PHYSICAL_ADDRESS address
@@ -431,7 +477,25 @@ ShvVmxEptPopulateIdentityTable(
 		next = (PVMX_EPT_ENTRY)ShvVmxEptGetVirtualFromPfn(ta.Entry->PFN);
 	}
 
-	return ShvVmxEptPopulateIdentityTable(next, level - 1, address);
+	return _ShvVmxEptPopulateIdentityTable(next, level - 1, address);
+}
+
+static NTSTATUS
+ShvVmxIdentityMapPage(
+	PHYSICAL_ADDRESS address
+)
+{
+	NTSTATUS ret;
+
+	KeAcquireSpinLockAtDpcLevel(&ShvVmxEptPML4Lock);
+
+	NT_ASSERTMSG("PML4 is not allocated.", (ShvVmxEptPML4 != NULL));
+
+	ret = _ShvVmxEptPopulateIdentityTable(ShvVmxEptPML4, VMX_EPT_PAGE_WALK_LENGTH, address);
+
+	KeReleaseSpinLockFromDpcLevel(&ShvVmxEptPML4Lock);
+
+	return ret;
 }
 
 static NTSTATUS
@@ -464,7 +528,7 @@ ShvVmxEptBuildIdentityTables(
 		//
 		for (PHYSICAL_ADDRESS address = start; address.QuadPart < end.QuadPart; address.QuadPart += PAGE_SIZE)
 		{
-			ret = ShvVmxEptPopulateIdentityTable(ShvVmxEptPML4, VMX_EPT_PAGE_WALK_LENGTH, address);
+			ret = ShvVmxIdentityMapPage(address);
 			if (ret != STATUS_SUCCESS) {
 				return ret;
 			}
@@ -484,11 +548,32 @@ ShvVmxEptBuildIdentityTables(
 	//
 	// Map the APIC base page.
 	//
-	ret = ShvVmxEptPopulateIdentityTable(ShvVmxEptPML4, VMX_EPT_PAGE_WALK_LENGTH, apicBase);
+	ret = ShvVmxIdentityMapPage(apicBase);
 	if (ret != STATUS_SUCCESS) {
 		return ret;
 	}
 
 	return STATUS_SUCCESS;
+}
+
+static VOID
+ShvVmxEptInvalidateEpt(
+	VOID
+)
+{
+	//
+	// Build the INVEPT descriptor.
+	//
+	struct {
+		VMX_EPT_EPTP Eptp;
+		ULONG64		 reserved0;
+	} invdesc = { 0 };
+
+	invdesc.Eptp = ShvVmxEptEptp;
+
+	//
+	// Invalidate the EPT
+	//
+	__vmx_invept(1, &invdesc);
 }
 

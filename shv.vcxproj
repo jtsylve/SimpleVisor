@@ -36,6 +36,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <ControlFlowGuard>false</ControlFlowGuard>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Optimized|x64'">/D "DBG=1" %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link />
     <Link>
@@ -59,6 +60,7 @@
     <ClCompile Include="shvvp.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="debug.h" />
     <ClInclude Include="shv.h" />
     <ClInclude Include="ntint.h" />
     <ClInclude Include="vmx.h" />

@@ -150,40 +150,63 @@ ShvVmxSetupVmcsForVp(
 	// will be ignored if this processor does not actully support the instructions 
 	// to begin with.
 	//
-	__vmx_vmwrite(SECONDARY_VM_EXEC_CONTROL,
-		ShvUtilAdjustMsr(VpData->MsrData[11],
-			SECONDARY_EXEC_ENABLE_RDTSCP | SECONDARY_EXEC_XSAVES | SECONDARY_EXEC_ENABLE_VPID | SECONDARY_EXEC_ENABLE_EPT));
+	__vmx_vmwrite(
+		SECONDARY_VM_EXEC_CONTROL,
+		ShvUtilAdjustMsr(
+			VpData->MsrData[11],
+			SECONDARY_EXEC_ENABLE_RDTSCP
+			| SECONDARY_EXEC_XSAVES
+			| SECONDARY_EXEC_ENABLE_VPID
+			| SECONDARY_EXEC_ENABLE_EPT
+		)
+	);
 
 	//
 	// Enable no pin-based options ourselves, but there may be some required by
 	// the processor. Use ShvUtilAdjustMsr to add those in.
 	//
-	__vmx_vmwrite(PIN_BASED_VM_EXEC_CONTROL,
-		ShvUtilAdjustMsr(VpData->MsrData[13], 0));
+	__vmx_vmwrite(
+		PIN_BASED_VM_EXEC_CONTROL,
+		ShvUtilAdjustMsr(VpData->MsrData[13], 0)
+	);
 
 	//
 	// In order for our choice of supporting RDTSCP and XSAVE/RESTORES above to
 	// actually mean something, we have to request secondary controls. We also
 	// want to activate the MSR bitmap in order to keep them from being caught.
 	//
-	__vmx_vmwrite(CPU_BASED_VM_EXEC_CONTROL,
-		ShvUtilAdjustMsr(VpData->MsrData[14],
-			CPU_BASED_ACTIVATE_MSR_BITMAP | CPU_BASED_ACTIVATE_SECONDARY_CONTROLS));
+	__vmx_vmwrite(
+		CPU_BASED_VM_EXEC_CONTROL,
+		ShvUtilAdjustMsr(
+			VpData->MsrData[14],
+			CPU_BASED_ACTIVATE_MSR_BITMAP
+			| CPU_BASED_ACTIVATE_SECONDARY_CONTROLS
+		)
+	);
 
 	//
 	// If any interrupts were pending upon entering the hypervisor, acknowledge
 	// them when we're done. And make sure to enter us in x64 mode at all times
 	//
-	__vmx_vmwrite(VM_EXIT_CONTROLS,
-		ShvUtilAdjustMsr(VpData->MsrData[15],
-			VM_EXIT_ACK_INTR_ON_EXIT | VM_EXIT_IA32E_MODE));
+	__vmx_vmwrite(
+		VM_EXIT_CONTROLS,
+		ShvUtilAdjustMsr(
+			VpData->MsrData[15],
+			VM_EXIT_ACK_INTR_ON_EXIT
+			| VM_EXIT_IA32E_MODE
+		)
+	);
 
 	//
 	// As we exit back into the guest, make sure to exist in x64 mode as well.
 	//
-	__vmx_vmwrite(VM_ENTRY_CONTROLS,
-		ShvUtilAdjustMsr(VpData->MsrData[16],
-			VM_ENTRY_IA32E_MODE));
+	__vmx_vmwrite(
+		VM_ENTRY_CONTROLS,
+		ShvUtilAdjustMsr(
+			VpData->MsrData[16],
+			VM_ENTRY_IA32E_MODE
+		)
+	);
 
 	//
 	// Load the CS Segment (Ring 0 Code)
@@ -407,7 +430,9 @@ ShvVmxLaunchOnVp(
 		//
 		// Initialize the VMCS, both guest and host state.
 		//
+		SHV_DEBUG_PRINT("Setting up VMCS for VP %u.\n", VpData->VpIndex);
 		ShvVmxSetupVmcsForVp(VpData);
+		SHV_DEBUG_PRINT("Setting up VMCS for VP %u complete.\n", VpData->VpIndex);
 
 		//
 		// Record that VMX is now enabled

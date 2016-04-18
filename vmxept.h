@@ -4,19 +4,19 @@ Copyright (c) Joe T. Sylve.  All rights reserved.
 
 Header Name:
 
-vmxept.h
+	vmxept.h
 
 Abstract:
 
-This header defines the structures for Intel x64 VT-x EPT support.
+	This header defines the structures for Intel x64 VT-x EPT support.
 
 Author:
 
-Joe T. Sylve (@jtsylve) 16-Apr-2016 - Initial version
+	Joe T. Sylve (@jtsylve) 16-Apr-2016 - Initial version
 
 Environment:
 
-Kernel mode only.
+	Kernel mode only.
 
 --*/
 

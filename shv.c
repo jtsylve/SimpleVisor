@@ -85,7 +85,7 @@ ShvUnload(
 	//
 	// Indicate unload
 	//
-	DbgPrintEx(77, 0, "The SHV has been uninstalled.\n");
+	SHV_PRINT("The SHV has been uninstalled.\n");
 }
 
 NTSTATUS
@@ -168,6 +168,6 @@ ShvInitialize(
 	// Make the driver (and SHV itself) unloadable, and indicate success.
 	//
 	DriverObject->DriverUnload = ShvUnload;
-	DbgPrintEx(77, 0, "The SHV has been installed.\n");
+	SHV_PRINT("The SHV has been installed.\n");
 	return STATUS_SUCCESS;
 }
