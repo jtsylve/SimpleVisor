@@ -154,10 +154,10 @@ ShvVmxSetupVmcsForVp(
 		SECONDARY_VM_EXEC_CONTROL,
 		ShvUtilAdjustMsr(
 			VpData->MsrData[11],
-			SECONDARY_EXEC_ENABLE_RDTSCP
-			| SECONDARY_EXEC_XSAVES
-			| SECONDARY_EXEC_ENABLE_VPID
-			| SECONDARY_EXEC_ENABLE_EPT
+			SECONDARY_EXEC_ENABLE_RDTSCP |
+			SECONDARY_EXEC_XSAVES |
+			SECONDARY_EXEC_ENABLE_VPID |
+			SECONDARY_EXEC_ENABLE_EPT
 		)
 	);
 
@@ -179,8 +179,8 @@ ShvVmxSetupVmcsForVp(
 		CPU_BASED_VM_EXEC_CONTROL,
 		ShvUtilAdjustMsr(
 			VpData->MsrData[14],
-			CPU_BASED_ACTIVATE_MSR_BITMAP
-			| CPU_BASED_ACTIVATE_SECONDARY_CONTROLS
+			CPU_BASED_ACTIVATE_MSR_BITMAP |
+			CPU_BASED_ACTIVATE_SECONDARY_CONTROLS
 		)
 	);
 
@@ -192,8 +192,8 @@ ShvVmxSetupVmcsForVp(
 		VM_EXIT_CONTROLS,
 		ShvUtilAdjustMsr(
 			VpData->MsrData[15],
-			VM_EXIT_ACK_INTR_ON_EXIT
-			| VM_EXIT_IA32E_MODE
+			VM_EXIT_ACK_INTR_ON_EXIT |
+			VM_EXIT_IA32E_MODE
 		)
 	);
 
@@ -430,9 +430,7 @@ ShvVmxLaunchOnVp(
 		//
 		// Initialize the VMCS, both guest and host state.
 		//
-		SHV_DEBUG_PRINT("Setting up VMCS for VP %u.\n", VpData->VpIndex);
 		ShvVmxSetupVmcsForVp(VpData);
-		SHV_DEBUG_PRINT("Setting up VMCS for VP %u complete.\n", VpData->VpIndex);
 
 		//
 		// Record that VMX is now enabled

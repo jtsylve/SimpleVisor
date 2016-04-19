@@ -16,7 +16,7 @@ Author:
 
 Environment:
 
-	Kernel mode only, IRQL DISPATCH_LEVEL.
+	Kernel mode only, IRQL >= DISPATCH_LEVEL.
 
 --*/
 
@@ -42,10 +42,11 @@ Environment:
 // Iterate through each entry in a level of a page table.
 //
 #define SHV_FOR_EACH_ENTRY(table, name, type) \
-	for (type name = table;\
+	for (\
+		type name = table;\
 		(ULONG_PTR)name < (ULONG_PTR)table + PAGE_SIZE;\
 		name++\
-		)
+	)
 
 //
 // Given a violation reasion, tell whether an EPT violation
@@ -155,7 +156,7 @@ ShvVmxEptInitialize(
 	//
 	// Allocate memory to hold the EPT PML4 table.
 	//
-	ShvVmxEptPML4 = (PVMX_EPT_ENTRY)ShvUtilAllocateContiguousMemory(PAGE_SIZE);
+	ShvVmxEptPML4 = (PVMX_EPT_ENTRY)ExAllocatePoolWithTag(NonPagedPoolNx, PAGE_SIZE, 'EPT ');
 	if (ShvVmxEptPML4 == NULL) {
 		return STATUS_HV_NO_RESOURCES;
 	}
@@ -279,25 +280,25 @@ ShvVmxEptCleanup(
 				//
 				// Free the page table.
 				//
-				MmFreeContiguousMemory(pt);
+				ExFreePoolWithTag(pt, 'EPT ');
 			}
 
 			//
 			// Free the PD table.
 			//
-			MmFreeContiguousMemory(pdt);
+			ExFreePoolWithTag(pdt, 'EPT ');
 		}
 
 		//
 		// Free the PDP table.
 		//
-		MmFreeContiguousMemory(pdpt);
+		ExFreePoolWithTag(pdpt, 'EPT ');
 	}
 
 	//
 	// Free the PML4 Table
 	//
-	MmFreeContiguousMemory(ShvVmxEptPML4);
+	ExFreePoolWithTag(ShvVmxEptPML4, 'EPT ');
 	ShvVmxEptPML4 = NULL;
 
 	KeReleaseSpinLockFromDpcLevel(&ShvVmxEptPML4Lock);
@@ -308,10 +309,9 @@ ShvVmxEptHandleViolation(
 	_In_ PSHV_VP_STATE VpState
 )
 {
-	UNREFERENCED_PARAMETER(VpState);
-
 	PHYSICAL_ADDRESS gpa;
 	SIZE_T eq;
+	UNREFERENCED_PARAMETER(VpState);
 
 	//
 	// Read guest physical address that caused the violation.
@@ -323,7 +323,7 @@ ShvVmxEptHandleViolation(
 	//
 	__vmx_vmread(EXIT_QUALIFICATION, &eq);
 
-	SHV_DEBUG_PRINT("[%u] GPA: %llx Exit Reason %llx\n",
+	SHV_DEBUG_PRINT("[%u] GPA: %llx Exit Qualification %llx\n",
 		KeGetCurrentProcessorNumberEx(NULL),
 		gpa.QuadPart,
 		eq
@@ -351,6 +351,7 @@ ShvVmxEptHandleViolation(
 		return;
 	}
 
+	SHV_DEBUG_PRINT("Bad exit qualification: %llx\n", eq);
 	NT_ASSERTMSG("Unknown EPT Violation Reason", FALSE);
 }
 
@@ -457,7 +458,7 @@ _ShvVmxEptPopulateIdentityTable(
 		//
 		// Allocate memory to hold the table.
 		//
-		next = (PVMX_EPT_ENTRY)ShvUtilAllocateContiguousMemory(PAGE_SIZE);
+		next = (PVMX_EPT_ENTRY)ExAllocatePoolWithTag(NonPagedPoolNx, PAGE_SIZE, 'EPT ');
 		if (next == NULL) {
 			return STATUS_HV_NO_RESOURCES;
 		}
@@ -504,7 +505,6 @@ ShvVmxEptBuildIdentityTables(
 )
 {
 	PPHYSICAL_MEMORY_RANGE ranges;
-	PHYSICAL_ADDRESS apicBase;
 	NTSTATUS ret;
 
 	//
@@ -536,21 +536,15 @@ ShvVmxEptBuildIdentityTables(
 	}
 
 	//
-	// We also apparently have to create a mapping for the APIC or the system
-	// hangs on us.
+	// We don't enumerate the hardware mapped MMIO, so we need to identity map
+	// the first 4 GiB to be sure we cover them all.
 	//
-
-	//
-	// Get the APIC base physical address.
-	//
-	apicBase.QuadPart = (__readmsr(IA32_APIC_BASE_MSR) & IA32_APIC_BASE_ADDRESS_MASK);
-
-	//
-	// Map the APIC base page.
-	//
-	ret = ShvVmxIdentityMapPage(apicBase);
-	if (ret != STATUS_SUCCESS) {
-		return ret;
+	for (PHYSICAL_ADDRESS address = { 0 }; address.QuadPart < MAXULONG32; address.QuadPart += PAGE_SIZE)
+	{
+		ret = ShvVmxIdentityMapPage(address);
+		if (ret != STATUS_SUCCESS) {
+			return ret;
+		}
 	}
 
 	return STATUS_SUCCESS;

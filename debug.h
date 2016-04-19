@@ -36,9 +36,9 @@ Environment:
 //
 // If a kernel debugger is attached, cause a breakpoint.
 //
-#define SHV_DEBUG_BREAKPOINT() { if (KD_DEBUGGER_NOT_PRESENT == FALSE) KdBreakPoint(); }
+#define SHV_BREAKPOINT() { if (KD_DEBUGGER_NOT_PRESENT == FALSE) KdBreakPoint(); }
 
 //
 // If a kernel debugger is attached, cause a breakpoint after printing a message.
 //
-#define SHV_DEBUG_BREAKPOINT_MESSAGE(...) { DbgPrintEx(77, 0, __VA_ARGS__); SHV_DEBUG_BREAKPOINT(); }
+#define SHV_BREAKPOINT_MESSAGE(...)  { DbgPrintEx(77, 0, __VA_ARGS__); SHV_BREAKPOINT(); }

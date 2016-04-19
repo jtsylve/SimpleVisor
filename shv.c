@@ -160,6 +160,7 @@ ShvInitialize(
 	//
 	if (HviIsAnyHypervisorPresent() == FALSE)
 	{
+		ShvVmxEptCleanup();
 		MmFreeContiguousMemory(ShvGlobalData);
 		return STATUS_HV_NOT_PRESENT;
 	}

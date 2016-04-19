@@ -185,7 +185,12 @@ ShvVmxHandleExit(
 		ShvVmxHandleVmx(VpState);
 		break;
 	default:
-		NT_ASSERT(FALSE);
+		SHV_DEBUG_PRINT(
+			"[%u] Unhandled Exit Reason: %x\n",
+			KeGetCurrentProcessorNumberEx(NULL),
+			VpState->ExitReason
+		);
+		NT_ASSERTMSG("Unhandled exit reason", FALSE);
 		break;
 	}
 
