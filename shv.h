@@ -1,6 +1,7 @@
 /*++
 
 Copyright (c) Alex Ionescu.  All rights reserved.
+Copyright (c) Joe T. Sylve.  All rights reserved.
 
 Header Name:
 
@@ -13,6 +14,7 @@ Abstract:
 Author:
 
 	Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
+	Joe T. Sylve (@jtsylve)  13-Apr-2016 - Fork for enhancements
 
 Environment:
 
