@@ -1,6 +1,7 @@
 /*++
 
 Copyright (c) Alex Ionescu.  All rights reserved.
+Copyright (c) Joe T. Sylve.  All rights reserved.
 
 Module Name:
 
@@ -13,6 +14,7 @@ Abstract:
 Author:
 
 	Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
+	Joe T. Sylve (@jtsylve)  13-Apr-2016 - Fork for enhancements
 
 Environment:
 
@@ -80,7 +82,7 @@ ShvUnload(
 	//
 	// Indicate unload
 	//
-	DbgPrintEx(77, 0, "The SHV has been uninstalled.\n");
+	SHV_PRINT("The SHV has been uninstalled.\n");
 }
 
 NTSTATUS
@@ -136,6 +138,7 @@ ShvInitialize(
 	//
 	if (HviIsAnyHypervisorPresent() == FALSE)
 	{
+		ShvVmxEptCleanup();
 		MmFreeContiguousMemory(ShvGlobalData);
 		return STATUS_HV_NOT_PRESENT;
 	}
@@ -144,6 +147,6 @@ ShvInitialize(
 	// Make the driver (and SHV itself) unloadable, and indicate success.
 	//
 	DriverObject->DriverUnload = ShvUnload;
-	DbgPrintEx(77, 0, "The SHV has been installed.\n");
+	SHV_PRINT("The SHV has been installed.\n");
 	return STATUS_SUCCESS;
 }

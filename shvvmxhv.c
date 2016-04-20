@@ -1,6 +1,7 @@
 /*++
 
 Copyright (c) Alex Ionescu.  All rights reserved.
+Copyright (c) Joe T. Sylve.  All rights reserved.
 
 Module Name:
 
@@ -13,6 +14,7 @@ Abstract:
 Author:
 
 	Alex Ionescu (@aionescu) 16-Mar-2016 - Initial version
+	Joe T. Sylve (@jtsylve)  13-Apr-2016 - Fork for enhancements
 
 Environment:
 
@@ -169,6 +171,9 @@ ShvVmxHandleExit(
 	case EXIT_REASON_XSETBV:
 		ShvVmxHandleXsetbv(VpState);
 		break;
+	case EXIT_REASON_EPT_VIOLATION:
+		ShvVmxEptHandleViolation(VpState);
+		break;
 	case EXIT_REASON_VMCALL:
 	case EXIT_REASON_VMCLEAR:
 	case EXIT_REASON_VMLAUNCH:
@@ -182,7 +187,12 @@ ShvVmxHandleExit(
 		ShvVmxHandleVmx(VpState);
 		break;
 	default:
-		NT_ASSERT(FALSE);
+		SHV_DEBUG_PRINT(
+			"[%u] Unhandled Exit Reason: %x\n",
+			KeGetCurrentProcessorNumberEx(NULL),
+			VpState->ExitReason
+		);
+		NT_ASSERTMSG("Unhandled exit reason", FALSE);
 		break;
 	}
 
