@@ -130,7 +130,7 @@ ShvVmxEptProbe(
 
 	if (_bittest64(&control, 32 + 31) == 0)
 	{
-		// return FALSE;
+		return FALSE;
 	}
 
 	//
